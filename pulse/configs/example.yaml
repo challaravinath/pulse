@@ -1,0 +1,263 @@
+# -----------------------------------------------------------
+# PULSE Config - Example App-Level Monitoring
+# -----------------------------------------------------------
+#
+# ONE file per team. Contains everything PULSE needs:
+#   1. Where the data is (cluster, database, table)
+#   2. What the data means (metrics, dimensions)
+#   3. How to connect (auth)
+#
+# To onboard a new team: copy this file, change the values.
+# -----------------------------------------------------------
+
+metadata:
+  id: "example-app-telemetry"
+  name: "Example App-Level Monitoring"
+  description: "App-level telemetry for the Example product"
+  owner: "team@example.com"
+  version: "1.0.0"
+
+# -- Where the data lives --
+clusters:
+  - name: "EU-West"
+    url: "https://example-eu.kusto.windows.net"
+    database: "ExampleTelemetryDB"
+    table: "app_telemetry"
+    region: "EU"
+
+  - name: "US-Central"
+    url: "https://example-us.kusto.windows.net"
+    database: "ExampleTelemetryDB"
+    table: "app_telemetry"
+    region: "US"
+
+strategy: "union"
+
+# -- How to connect --
+authentication:
+  method: "azure_cli"
+
+# -- Always-applied filters --
+filters:
+  mandatory: []
+
+# -- Profile settings --
+profile:
+  time_scope: "365d"
+  time_column: "EventInfo_Time"
+  # ★ Enhanced profile options (optional — remove if columns don't exist)
+  ingestion_time_column: "PipelineInfo_IngestionTime"  # enables pipeline lag analysis
+
+# -- Metrics (things you COUNT) --
+metrics:
+  events:
+    display_name: "Events"
+    kql: "count()"
+    description: "Total telemetry events (one per user action)"
+
+  active_orgs:
+    display_name: "Active Organizations"
+    kql: "dcount(OrgId)"
+    description: "Distinct organizations with at least one event"
+
+  active_users:
+    display_name: "Active Users"
+    kql: "dcount(UserId)"
+    description: "Distinct users"
+
+  sessions:
+    display_name: "Sessions"
+    kql: "dcount(SessionId)"
+    description: "Distinct user sessions"
+
+  entity_types:
+    display_name: "Entity Types Used"
+    kql: "dcount(EntityName)"
+    description: "How many distinct entity types were accessed"
+
+# -- Dimensions (things you GROUP BY) --
+dimensions:
+  time:
+    column: "EventInfo_Time"
+    display_name: "Time"
+    kql_group: "Day=startofday(EventInfo_Time)"
+    sql_column: "Day"
+    description: "When the event happened"
+    granularities:
+      day: "startofday(EventInfo_Time)"
+      week: "startofweek(EventInfo_Time)"
+      month: "startofmonth(EventInfo_Time)"
+
+  organization:
+    column: "OrgId"
+    display_name: "Organization"
+    kql_group: "OrgId"
+    sql_column: "OrgId"
+    description: "Which organization"
+
+  region:
+    column: "GeoName"
+    display_name: "Region"
+    kql_group: "GeoName"
+    sql_column: "GeoName"
+    description: "Geographic region (EMEA, NAM, APAC, etc.)"
+
+  entity:
+    column: "EntityName"
+    display_name: "Entity/Feature"
+    kql_group: "EntityName"
+    sql_column: "EntityName"
+    description: "Which feature or entity type was used"
+
+  browser:
+    column: "DeviceInfo_BrowserName"
+    display_name: "Browser"
+    kql_group: "DeviceInfo_BrowserName"
+    sql_column: "DeviceInfo_BrowserName"
+    description: "User's browser"
+
+  country:
+    column: "PipelineInfo_ClientCountry"
+    display_name: "Country"
+    kql_group: "PipelineInfo_ClientCountry"
+    sql_column: "PipelineInfo_ClientCountry"
+    description: "User's country"
+
+  app_module:
+    column: "AppModule"
+    display_name: "App Module"
+    kql_group: "AppModule"
+    sql_column: "AppModule"
+    description: "Application module"
+
+  # ★ Enhanced dimensions (remove if your schema doesn't have these columns)
+  activity:
+    column: "EventInfo_Name"
+    display_name: "Activity/Event Type"
+    kql_group: "EventInfo_Name"
+    sql_column: "EventInfo_Name"
+    description: "What action or event the user performed"
+
+  version:
+    column: "AppVersion"
+    display_name: "App Version"
+    kql_group: "AppVersion"
+    sql_column: "AppVersion"
+    description: "Application version — tracks rollout adoption"
+
+# ═══════════════════════════════════════════════════════════════════
+# ORG METADATA ENRICHMENT
+# ═══════════════════════════════════════════════════════════════════
+#
+# Purpose: Resolve raw OrgId/TenantId GUIDs to friendly display names
+#          in all PULSE query results, charts, and narratives.
+#
+# How it works:
+#   1. PULSE builds profile tables from your telemetry (as usual)
+#   2. Extracts distinct OrgIds from profile_organization table
+#   3. Queries the reference table below for ONLY those OrgIds
+#   4. Caches the name mappings in memory for the session
+#   5. Every query result is automatically enriched
+#
+# Without this: "11111111-1111-1111-1111-111111111111 — 1.5M events"
+# With this:    "Contoso (NAM) — 1.5M events"
+#
+# To disable: set source to "none" or remove this block entirely.
+# ═══════════════════════════════════════════════════════════════════
+
+enrichment:
+
+  # ── Source Type ──────────────────────────────────────────────────
+  # Where to pull org display names from.
+  #   "kusto"  → Query a Kusto reference table at startup (recommended)
+  #   "csv"    → Load from a local CSV/TSV/XLSX file
+  #   "none"   → Skip enrichment, show raw GUIDs (default if block is absent)
+  source: kusto
+
+  # ── Kusto Connection ────────────────────────────────────────────
+  # Which cluster to connect through when running the enrichment query.
+  # If your query uses cross-cluster union (like ours), you only need
+  # to connect to ONE cluster — Kusto handles the federation internally.
+  cluster: "https://example-org-us.kusto.windows.net"
+  database: "OrgMetadataDB"
+
+  # ── Query ───────────────────────────────────────────────────────
+  # Custom KQL to fetch org metadata.
+  #
+  # IMPORTANT: {org_ids} is a placeholder. At runtime, PULSE replaces
+  # it with the actual OrgIds from your telemetry data. This means we
+  # only fetch names for orgs that are active — not the entire table
+  # (which has millions of rows and times out).
+  #
+  # Our setup uses a cross-cluster union because org data is split
+  # across two clusters (EU + US). If your reference table lives on
+  # a single cluster, you can use "table" + "filter" fields instead
+  # of "query" (see examples at the bottom of this file).
+  #
+  # The query MUST return the columns listed in "mappings" below.
+  query: |
+    union
+      cluster('https://example-org-eu.kusto.windows.net').database('OrgMetadataDB').organizations,
+      cluster('https://example-org-us.kusto.windows.net').database('OrgMetadataDB').organizations
+    | where DomainName !startswith 'deleted-'
+    | where OrgsId in~ ({org_ids})
+    | project OrgsId, FriendlyName, TenantId, Geo
+
+  # ── Column Mappings ─────────────────────────────────────────────
+  # Maps YOUR reference table's column names to PULSE's internal fields.
+  # Left side = PULSE field (fixed), Right side = your column name (varies).
+  #
+  # Every team's reference table has different column names.
+  # This mapping is how PULSE knows which column is which.
+  #
+  # Only org_id and org_name are required. tenant_id and geo are optional
+  # but recommended — they enable tenant-level grouping and geo breakdowns.
+  mappings:
+    org_id: "OrgsId"              # Column containing the Organization GUID
+                                  # Must match your telemetry OrgId values
+    org_name: "FriendlyName"      # Column containing the human-readable org name
+                                  # This is what users see instead of the GUID
+    tenant_id: "TenantId"         # Column containing the AAD Tenant GUID
+                                  # Enables tenant-level grouping and name resolution
+    geo: "Geo"                    # Column containing the region/geo code (NAM, EMEA, etc.)
+                                  # Used for geo-based breakdowns in narratives
+
+  # ── Geo Backfill ────────────────────────────────────────────────
+  # When telemetry has a null GeoName but the reference table has a Geo
+  # value, should PULSE fill it in?
+  #
+  # Default: false (safe). NaN stays NaN.
+  #
+  # Only set to true AFTER confirming that the Geo column in your
+  # reference table means the same thing as GeoName in your telemetry.
+  # (e.g., organizations.Geo might be "registration region" while
+  # telemetry GeoName might be "event origin region" — different things)
+  #
+  # Pending: cluster owner confirmation.
+  backfill_geo: false
+
+# ═══════════════════════════════════════════════════════════════════
+# ENRICHMENT EXAMPLES FOR OTHER TEAMS
+# ═══════════════════════════════════════════════════════════════════
+#
+# ── Team with a single-cluster reference table ────────────────────
+# No custom query needed. Just specify "table" and optionally "filter".
+# PULSE auto-generates the KQL for you.
+#
+# enrichment:
+#   source: kusto
+#   cluster: "https://other-cluster.kusto.windows.net"
+#   database: "RefData"
+#   table: "CustomerOrgs"
+#   filter: "| where status == 'active'"
+#   mappings:
+#     org_id: "customer_id"
+#     org_name: "customer_name"
+#     tenant_id: "tenant_guid"
+#     geo: "region"
+#
+# ── Team with no reference table yet ─────────────────────────────
+# PULSE works fine without enrichment — users just see raw GUIDs.
+#
+# enrichment:
+#   source: none

@@ -1,0 +1,70 @@
+# PULSE System Default Schema
+# These columns are automatically available in ALL configs
+# Teams don't need to list these - they're included by default
+
+version: "1.0"
+
+default_columns:
+  - name: "Date"
+    type: "datetime"
+    description: "Event timestamp"
+    examples:
+      - "Date > ago(7d)"
+      - "Date between (ago(30d) .. now())"
+  
+  - name: "UserID"
+    type: "guid"
+    description: "User identifier"
+    examples:
+      - "UserID == 'abc-123'"
+  
+  - name: "TenantID"
+    type: "guid"
+    description: "Tenant identifier"
+    examples:
+      - "TenantID == 'xyz-456'"
+  
+  - name: "UserIDType"
+    type: "string"
+    description: "Type of user ID (e.g., AADOrgID)"
+    examples:
+      - "UserIDType == 'AADOrgID'"
+  
+  - name: "ProductName"
+    type: "string"
+    description: "Product name"
+    examples:
+      - "ProductName == 'ExampleApp'"
+  
+  - name: "ServiceTreeID"
+    type: "guid"
+    description: "Service tree identifier"
+  
+  - name: "AdditionalInfoJson"
+    type: "string"
+    description: "Additional information as JSON string"
+    note: "Use parse_json() in KQL to extract fields"
+  
+  - name: "UILocale"
+    type: "string"
+    description: "User interface locale"
+    examples:
+      - "UILocale == 'en-US'"
+  
+  - name: "Geo"
+    type: "string"
+    description: "Geographic region code"
+    examples:
+      - "Geo == 'EMEA'"
+      - "Geo in ('US', 'CANADA')"
+  
+  - name: "BrowserLocale"
+    type: "string"
+    description: "Browser locale setting"
+  
+  - name: "Region"
+    type: "string"
+    description: "Region name"
+    examples:
+      - "Region == 'ROW'"
+      - "Region in ('EMEA', 'APAC')"

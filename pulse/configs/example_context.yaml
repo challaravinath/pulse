@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────────────────────────
+# PULSE Business Context — tells PULSE what "normal" looks like
+# Save as: configs/YOUR_CONFIG_context.yaml
+# ─────────────────────────────────────────────────────────────────
+
+product_name: "ExampleApp"
+team_name: "ExampleApp Engineering"
+
+# ── What's normal ──────────────────────────────────────────────
+baselines:
+  daily_events: 2_000_000_000    # 2B events/day is normal
+  weekly_events: 14_000_000_000  # ~14B/week
+  active_orgs: 450               # ~450 orgs active per week
+  active_users: 12000            # ~12K users active per week
+
+# ── When to alert ──────────────────────────────────────────────
+thresholds:
+  alert_drop_pct: 25      # 🔴 flag if WoW drops more than 25%
+  warn_drop_pct: 10       # 🟡 warn if WoW drops more than 10%
+  alert_spike_pct: 100    # 🔴 flag if WoW spikes more than 100%
+  concentration_warn_pct: 70  # 🟡 warn if top region > 70% share
+
+# ── Regional expectations ──────────────────────────────────────
+regions:
+  EMEA:
+    share_pct: 70
+    note: "primary market, always dominant"
+  NA:
+    share_pct: 20
+    note: "secondary market"
+  GBR:
+    share_pct: 15
+    note: "subset of EMEA, key customer base"
+
+# ── Seasonality ───────────────────────────────────────────────
+# These adjustments are applied when framing WoW changes.
+# e.g. if january is -15%, a 10% drop in January is actually normal.
+seasonality:
+  monthly_pct:
+    january: -15      # January is typically 15% slower
+    august: -10       # Summer slowdown
+    december: -25     # Holiday period, very quiet
+  quarterly_pct:
+    q1: -10           # Q1 overall slower
+    q4: +5            # Q4 slightly higher
+  quiet_periods:
+    - "Christmas week (Dec 24 – Jan 1)"
+    - "Diwali week (varies)"
+
+# ── KPIs to track ─────────────────────────────────────────────
+kpis:
+  - name: "Daily active orgs"
+    metric: "active_orgs"
+    target: 500
+    note: "OKR target for FY25"
+  - name: "Daily events"
+    metric: "events"
+    target: 2_000_000_000
+
+# ── Known events calendar ─────────────────────────────────────
+# PULSE will mention these when reviewing data near these dates
+events:
+  - date: "2025-03-15"
+    name: "v2.0 feature launch"
+    expected_impact: "+20%"
+  - date: "2025-06-01"
+    name: "Regional rollout to ANZ"
+    expected_impact: "+5%"
+
+# ── General notes ─────────────────────────────────────────────
+# Shown in executive briefings and health checks
+notes:
+  - "EMAA (not EMEA) is a legacy label for some orgs — treat as equivalent"
+  - "Pipeline gaps on weekends are expected — look at 7-day rolling avg"
+  - "GBR and FRA are subsets of EMEA, included separately for drill-down"

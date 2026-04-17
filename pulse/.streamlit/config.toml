@@ -1,0 +1,21 @@
+[server]
+# Default is 60s — connect flow can take 2-3min on cold start, so disable it
+scriptRunTimeoutSecs = 0
+
+# Increase WebSocket message size for large dataframes
+maxMessageSize = 200
+
+# Keep WebSocket connection alive during long operations
+headless = true
+
+[browser]
+# Prevent browser from showing "connection lost" on long operations  
+gatherUsageStats = false
+
+[client]
+# Show error details in the UI for easier debugging
+showErrorDetails = false
+
+[runner]
+# Don't magicly rerun on file save during demo
+magicEnabled = false

@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PULSE — Telemetry Intelligence</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   PULSE v4.0 iter16 — Production React Frontend
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg-sidebar: #0f1729;
+  --bg-sidebar-hover: #1a2340;
+  --bg-sidebar-active: #1e2a4a;
+  --bg-main: #f6f8fb;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #f0f4f8;
+  --bg-code: #0f1729;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #dbeafe;
+  --accent-glow: rgba(37,99,235,0.12);
+  --accent-gradient: linear-gradient(135deg, #2563eb, #4f46e5);
+  --success: #059669;
+  --success-light: #d1fae5;
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --danger: #dc2626;
+  --danger-light: #fee2e2;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #f1f5f9;
+  --text-sidebar: #94a3b8;
+  --text-sidebar-bright: #e2e8f0;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --border-sidebar: rgba(255,255,255,0.06);
+  --kql-bg: #0c1322;
+  --kql-keyword: #93c5fd;
+  --kql-function: #67e8f9;
+  --kql-string: #86efac;
+  --kql-operator: #c4b5fd;
+  --kql-comment: #64748b;
+  --kql-number: #fbbf24;
+  --font-ui: 'DM Sans', -apple-system, system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'Cascadia Code', monospace;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03);
+  --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.06), 0 4px 10px -4px rgba(0,0,0,0.04);
+  --shadow-glow: 0 0 20px rgba(37,99,235,0.15);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  font-family: var(--font-ui); background: var(--bg-main); color: var(--text-primary);
+  overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes slideInRight { from { opacity:0; transform:translateX(24px); } to { opacity:1; transform:translateX(0); } }
+@keyframes slideInLeft { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+@keyframes blink { 0%,50% { opacity:1; } 51%,100% { opacity:0; } }
+@keyframes toastSlideIn { from { opacity:0; transform:translateY(-12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes progressPulse { 0% { box-shadow:0 0 0 0 rgba(37,99,235,0.4); } 70% { box-shadow:0 0 0 8px rgba(37,99,235,0); } 100% { box-shadow:0 0 0 0 rgba(37,99,235,0); } }
+@keyframes scaleIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+@keyframes dotPulse { 0%,80%,100% { transform:scale(0.6); opacity:0.4; } 40% { transform:scale(1); opacity:1; } }
+@keyframes countUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Layout ────────────────────────────────────────────────── */
+.layout { display: flex; height: 100vh; position: relative; }
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.sidebar {
+  width: 288px; background: var(--bg-sidebar); display: flex; flex-direction: column;
+  flex-shrink: 0; overflow: hidden; border-right: 1px solid var(--border-sidebar);
+  transition: width 0.3s var(--ease-out), transform 0.3s var(--ease-out); z-index: 20;
+}
+.sidebar.collapsed { width: 0; transform: translateX(-288px); }
+
+.sidebar-toggle {
+  display: none; position: fixed; top: 16px; left: 16px; z-index: 30;
+  width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-secondary); cursor: pointer;
+  align-items: center; justify-content: center; font-size: 18px;
+  box-shadow: var(--shadow-md); transition: all 0.2s;
+}
+.sidebar-toggle:hover { background: var(--bg-hover); }
+
+@media (max-width: 860px) {
+  .sidebar-toggle { display: flex; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; box-shadow: 4px 0 24px rgba(0,0,0,0.2); }
+  .sidebar.collapsed { transform: translateX(-288px); }
+  .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 15; animation: fadeIn 0.2s; }
+  .rich-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .rich-card-value { font-size: 22px; }
+  .msg-bubble { max-width: 92%; }
+  .chart-wrapper { margin: 8px -8px 4px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-card .kpi-value { font-size: 22px; }
+}
+@media (max-width: 480px) {
+  .rich-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rich-card { padding: 10px; }
+  .rich-card-value { font-size: 18px; }
+  .rich-card-label { font-size: 9px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .msg-bubble { max-width: 96%; font-size: 13px; }
+  .chat-input-row input { font-size: 14px; }
+  .scorecard { padding: 12px; }
+  .region-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+.sidebar-header {
+  padding: 24px 22px 20px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border-sidebar);
+}
+.logo-icon {
+  width: 38px; height: 38px; background: var(--accent-gradient); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; color: white; font-weight: 800; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+}
+.sidebar-title { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.5px; line-height: 1; }
+.sidebar-version { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-top: 2px; opacity: 0.7; }
+
+.sidebar-body {
+  flex: 1; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.field-group { display: flex; flex-direction: column; gap: 6px; }
+.field-label { font-size: 10.5px; font-weight: 600; color: var(--text-sidebar); text-transform: uppercase; letter-spacing: 0.9px; }
+.field-select {
+  background: var(--bg-sidebar-hover); color: white; border: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 32px 10px 12px; border-radius: var(--radius-sm); font-size: 13px;
+  font-family: var(--font-ui); font-weight: 500; cursor: pointer; outline: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; transition: border-color 0.2s;
+}
+.field-select:focus { border-color: var(--accent); }
+.field-select option { background: var(--bg-sidebar); color: white; }
+
+.btn-connect {
+  width: 100%; padding: 11px; border: none; border-radius: var(--radius-sm);
+  background: var(--accent-gradient); color: white; font-size: 13px; font-weight: 700;
+  font-family: var(--font-ui); cursor: pointer; transition: all 0.2s var(--ease-out); letter-spacing: 0.3px;
+}
+.btn-connect:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-connect:active:not(:disabled) { transform: translateY(0); }
+.btn-connect:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-disconnect {
+  width: 100%; padding: 11px; border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-sidebar-bright); font-size: 13px; font-weight: 600;
+  font-family: var(--font-ui); cursor: pointer; transition: all 0.2s;
+}
+.btn-disconnect:hover { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.4); color: #fca5a5; }
+
+.status-badge {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; transition: all 0.3s;
+}
+.status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.status-idle { background: rgba(148,163,184,0.08); color: var(--text-sidebar); }
+.status-idle::before { background: var(--text-muted); }
+.status-connecting { background: rgba(37,99,235,0.1); color: #93c5fd; }
+.status-connecting::before { background: #3b82f6; animation: pulse 1.5s infinite; }
+.status-connected { background: rgba(5,150,105,0.1); color: #6ee7b7; }
+.status-connected::before { background: #10b981; }
+
+.progress-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.progress-fill {
+  height: 100%; background: var(--accent-gradient); border-radius: 4px;
+  transition: width 0.5s var(--ease-out); animation: progressPulse 2s infinite;
+}
+
+.scope-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.scope-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
+  border-radius: 100px; font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,0.06); color: var(--text-sidebar);
+}
+.scope-badge.fast { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+
+.freshness-bar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  border-radius: var(--radius-sm); background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-sidebar);
+}
+.freshness-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.freshness-dot.fresh { background: #10b981; }
+.freshness-dot.aging { background: #f59e0b; }
+.freshness-dot.stale { background: #ef4444; animation: pulse 2s infinite; }
+.freshness-text { font-size: 11px; font-weight: 500; color: var(--text-sidebar); flex: 1; }
+.btn-reconnect {
+  font-size: 10px; font-weight: 700; color: #fbbf24; background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2); border-radius: var(--radius-xs);
+  padding: 3px 8px; cursor: pointer; transition: all 0.2s; font-family: var(--font-ui);
+}
+.btn-reconnect:hover { background: rgba(251,191,36,0.2); }
+
+.scope-progression {
+  padding: 12px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm);
+  border: 1px solid var(--border-sidebar);
+}
+.scope-progression-label { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.scope-steps { display: flex; align-items: center; gap: 0; }
+.scope-step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+.scope-step-dot {
+  width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15);
+  background: transparent; transition: all 0.4s var(--ease-out); z-index: 1;
+}
+.scope-step.active .scope-step-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(37,99,235,0.4); }
+.scope-step.done .scope-step-dot { background: #10b981; border-color: #10b981; }
+.scope-step-label { font-size: 9px; color: var(--text-muted); margin-top: 6px; font-weight: 500; white-space: nowrap; }
+.scope-step.active .scope-step-label, .scope-step.done .scope-step-label { color: var(--text-sidebar-bright); }
+.scope-line { flex: 1; height: 2px; background: rgba(255,255,255,0.08); margin: 0 -2px; position: relative; top: -12px; }
+.scope-line.filled { background: #10b981; }
+
+.connection-log {
+  max-height: 140px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-sm); border: 1px solid var(--border-sidebar);
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.connection-log div {
+  font-size: 10.5px; font-family: var(--font-mono); color: var(--text-muted);
+  line-height: 1.6; word-break: break-all;
+}
+
+/* ── Main Area ─────────────────────────────────────────────── */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+
+.welcome-screen { flex: 1; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.6s var(--ease-out); }
+.welcome-inner { text-align: center; max-width: 440px; padding: 40px; }
+.welcome-logo {
+  width: 72px; height: 72px; background: var(--accent-gradient); border-radius: 20px;
+  display: flex; align-items: center; justify-content: center; font-size: 32px;
+  color: white; margin: 0 auto 24px; box-shadow: 0 8px 32px rgba(37,99,235,0.2);
+}
+.welcome-inner h1 { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+.welcome-inner p { font-size: 15px; line-height: 1.6; color: var(--text-secondary); }
+
+/* ── Scorecard ─────────────────────────────────────────────── */
+.scorecard {
+  padding: 28px 32px 20px; animation: fadeInUp 0.5s var(--ease-out);
+  overflow-y: auto; border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, #f0f4ff 0%, var(--bg-main) 100%);
+}
+.scorecard-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.scorecard-header h2 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.scorecard-header .tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--accent); background: var(--accent-light); padding: 3px 8px; border-radius: 100px;
+}
+
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 18px; animation: scaleIn 0.4s var(--ease-out); animation-fill-mode: backwards;
+  transition: box-shadow 0.2s;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); }
+.kpi-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); animation: countUp 0.6s var(--ease-out); }
+.kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+
+.scorecard-opening {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 18px 20px; font-size: 13.5px; line-height: 1.65; color: var(--text-secondary);
+  animation: fadeInUp 0.5s 0.2s var(--ease-out); animation-fill-mode: backwards;
+}
+.scorecard-opening strong, .scorecard-opening b { color: var(--text-primary); font-weight: 700; }
+
+/* ── Rich Scorecard Cards ──────────────────────────────────── */
+.rich-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.rich-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 18px 20px; animation: scaleIn 0.4s var(--ease-out); animation-fill-mode: backwards;
+  transition: box-shadow 0.2s; position: relative; overflow: hidden;
+}
+.rich-card:hover { box-shadow: var(--shadow-md); }
+.rich-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.rich-card-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+.rich-card-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px;
+}
+.badge-positive { background: var(--success-light); color: var(--success); }
+.badge-negative { background: var(--danger-light); color: var(--danger); }
+.badge-neutral { background: var(--bg-hover); color: var(--text-muted); }
+.badge-warning { background: var(--warning-light); color: var(--warning); }
+
+.rich-card-value { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.2; }
+.rich-card-sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+
+/* Sparkline container */
+.sparkline-wrap { height: 36px; margin-top: 8px; opacity: 0.85; }
+
+/* Region heatmap */
+.region-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; margin-top: 8px; }
+.region-cell {
+  padding: 8px 10px; border-radius: var(--radius-xs); text-align: center;
+  font-size: 10px; font-weight: 700; color: white; min-height: 44px;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  transition: transform 0.15s;
+}
+.region-cell:hover { transform: scale(1.04); }
+.region-cell .region-name { font-size: 9px; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.4px; }
+.region-cell .region-pct { font-size: 14px; font-weight: 800; }
+
+/* Anomaly list */
+.anomaly-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.anomaly-item {
+  display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px;
+  line-height: 1.4; color: var(--text-secondary); padding: 6px 8px;
+  background: var(--bg-hover); border-radius: var(--radius-xs);
+}
+.anomaly-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.anomaly-dot.red { background: var(--danger); }
+.anomaly-dot.amber { background: var(--warning); }
+
+/* Health gauge */
+.health-bar { height: 8px; background: var(--bg-hover); border-radius: 4px; margin-top: 10px; overflow: hidden; }
+.health-fill { height: 100%; border-radius: 4px; transition: width 0.6s var(--ease-out); }
+.health-fill.green { background: linear-gradient(90deg, #10b981, #34d399); width: 90%; }
+.health-fill.yellow { background: linear-gradient(90deg, #f59e0b, #fbbf24); width: 60%; }
+.health-fill.red { background: linear-gradient(90deg, #ef4444, #f87171); width: 30%; }
+
+.scorecard.collapsed { padding: 0; border-bottom: 1px solid var(--border-light); background: var(--bg-card); }
+.scorecard.collapsed .kpi-grid, .scorecard.collapsed .scorecard-opening, .scorecard.collapsed .rich-grid { display: none; }
+.scorecard.collapsed .scorecard-header { margin-bottom: 0; padding: 10px 32px; }
+
+.scorecard-toggle {
+  margin-left: auto; padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs);
+  background: transparent; font-size: 11px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; font-family: var(--font-ui); transition: all 0.15s; display: inline-flex;
+  align-items: center; gap: 4px;
+}
+.scorecard-toggle:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.scorecard-toggle svg { width: 12px; height: 12px; transition: transform 0.2s; }
+.scorecard.collapsed .scorecard-toggle svg { transform: rotate(180deg); }
+
+/* ── Chat ──────────────────────────────────────────────────── */
+.chat-area {
+  flex: 1; overflow-y: auto; scroll-behavior: smooth; padding: 24px 0 8px;
+  scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.08) transparent;
+}
+
+.msg-row { display: flex; padding: 4px 32px; animation: fadeInUp 0.35s var(--ease-out); animation-fill-mode: backwards; }
+.msg-row.user { justify-content: flex-end; }
+.msg-row.bot { justify-content: flex-start; }
+.msg-bubble { max-width: 82%; min-width: 80px; }
+
+.user-bubble {
+  background: var(--accent); color: white; padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px; font-size: 14px; font-weight: 500;
+  line-height: 1.5; box-shadow: var(--shadow-sm);
+}
+
+.bot-bubble {
+  background: var(--bg-card); border: 1px solid var(--border); padding: 14px 18px;
+  border-radius: 4px 18px 18px 18px; font-size: 14px; line-height: 1.65;
+  color: var(--text-primary); box-shadow: var(--shadow-xs);
+}
+.bot-bubble.error { border-color: #fecaca; background: #fef2f2; color: var(--danger); }
+
+.bot-bubble p { margin-bottom: 8px; }
+.bot-bubble p:last-child { margin-bottom: 0; }
+.bot-bubble strong, .bot-bubble b { font-weight: 700; color: var(--text-primary); }
+.bot-bubble ul, .bot-bubble ol { padding-left: 20px; margin: 6px 0; }
+.bot-bubble li { margin-bottom: 4px; }
+.bot-bubble code {
+  font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-hover);
+  padding: 1px 5px; border-radius: 4px; color: #6366f1;
+}
+.bot-bubble a { color: var(--accent); text-decoration: underline; }
+.bot-bubble h3, .bot-bubble h4 { margin: 12px 0 6px; font-size: 14px; font-weight: 700; }
+
+.streaming-cursor {
+  display: inline-block; width: 2px; height: 16px; background: var(--accent);
+  margin-left: 2px; vertical-align: text-bottom; animation: blink 0.8s infinite;
+}
+.typing-dots { display: flex; gap: 4px; padding: 4px 0; }
+.typing-dots span {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted);
+  animation: dotPulse 1.4s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.msg-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-light); }
+.meta-tag {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
+  color: var(--text-muted); padding: 2px 8px; background: var(--bg-hover); border-radius: 100px;
+}
+.meta-tag.source { color: var(--accent); background: var(--accent-light); }
+.meta-tag.stale { color: var(--danger); background: var(--danger-light); }
+
+/* ── Charts ────────────────────────────────────────────────── */
+.chart-wrapper { margin: 12px -4px 4px; border-radius: var(--radius-sm); overflow: visible; border: 1px solid var(--border-light); background: white; }
+
+/* ── Data Table ────────────────────────────────────────────── */
+.data-table-container { margin: 12px -4px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.data-table-scroll { overflow-x: auto; max-height: 420px; scrollbar-width: thin; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.data-table thead { position: sticky; top: 0; z-index: 2; }
+.data-table th {
+  background: var(--bg-hover); padding: 8px 12px; text-align: left; font-weight: 700;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+  border-bottom: 2px solid var(--border); white-space: nowrap; cursor: pointer;
+  user-select: none; transition: background 0.15s;
+}
+.data-table th:hover { background: var(--border); }
+.data-table th .sort-icon { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+.data-table th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+.data-table td {
+  padding: 7px 12px; border-bottom: 1px solid var(--border-light); white-space: nowrap;
+  color: var(--text-primary); font-feature-settings: 'tnum';
+}
+.data-table tbody tr:hover { background: var(--bg-hover); }
+.data-table td.num { text-align: right; font-family: var(--font-mono); font-size: 12px; }
+
+.table-footer {
+  display: flex; align-items: center; justify-content: space-between; padding: 8px 12px;
+  background: var(--bg-hover); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-secondary);
+}
+.table-footer .page-controls { display: flex; align-items: center; gap: 6px; }
+.page-btn {
+  padding: 3px 10px; border: 1px solid var(--border); border-radius: var(--radius-xs);
+  background: var(--bg-card); font-size: 11px; font-weight: 600; font-family: var(--font-ui);
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.page-btn:hover:not(:disabled) { background: var(--accent-light); color: var(--accent); }
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── KQL Block ─────────────────────────────────────────────── */
+.kql-toggle {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 10px;
+  font-size: 11px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+  padding: 4px 10px; border-radius: var(--radius-xs); border: 1px solid var(--border);
+  background: transparent; font-family: var(--font-ui); transition: all 0.15s;
+}
+.kql-toggle:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.kql-toggle svg { width: 12px; height: 12px; transition: transform 0.2s; }
+.kql-toggle.open svg { transform: rotate(90deg); }
+
+.kql-block { margin-top: 8px; background: var(--kql-bg); border-radius: var(--radius-sm); overflow: hidden; animation: scaleIn 0.2s var(--ease-out); }
+.kql-header {
+  display: flex; align-items: center; justify-content: space-between; padding: 8px 14px;
+  background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.kql-header span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.3); font-family: var(--font-mono); }
+.btn-copy {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+  border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.1);
+  background: transparent; color: rgba(255,255,255,0.5); font-size: 10.5px; font-weight: 600;
+  font-family: var(--font-ui); cursor: pointer; transition: all 0.15s;
+}
+.btn-copy:hover { background: rgba(255,255,255,0.08); color: white; }
+.btn-copy.copied { color: #10b981; border-color: rgba(16,185,129,0.3); }
+
+.kql-code {
+  padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 12.5px;
+  line-height: 1.65; color: #e2e8f0; white-space: pre-wrap; word-break: break-all;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.kql-kw { color: var(--kql-keyword); font-weight: 600; }
+.kql-fn { color: var(--kql-function); }
+.kql-str { color: var(--kql-string); }
+.kql-op { color: var(--kql-operator); }
+.kql-cmt { color: var(--kql-comment); font-style: italic; }
+.kql-num { color: var(--kql-number); }
+
+/* ── Chips ─────────────────────────────────────────────────── */
+.chips-bar { display: flex; gap: 8px; padding: 8px 32px 4px; flex-wrap: wrap; animation: fadeInUp 0.3s var(--ease-out); }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px;
+  border: 1px solid var(--border); border-radius: 100px; background: var(--bg-card);
+  color: var(--text-secondary); font-size: 12.5px; font-weight: 600; font-family: var(--font-ui);
+  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-xs); white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-light);
+  transform: translateY(-1px); box-shadow: var(--shadow-sm);
+}
+
+/* ── Input ─────────────────────────────────────────────────── */
+.input-bar { display: flex; align-items: center; gap: 10px; padding: 12px 32px 20px; background: var(--bg-main); }
+.input-field {
+  flex: 1; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-input); font-size: 14px; font-family: var(--font-ui); color: var(--text-primary);
+  outline: none; transition: all 0.2s; box-shadow: var(--shadow-sm);
+}
+.input-field:focus { border-color: var(--accent); box-shadow: var(--shadow-glow); }
+.input-field:disabled { background: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; }
+.input-field::placeholder { color: var(--text-muted); }
+
+.btn-send {
+  display: inline-flex; align-items: center; gap: 6px; padding: 12px 20px; border: none;
+  border-radius: var(--radius-md); background: var(--accent-gradient); color: white;
+  font-size: 13px; font-weight: 700; font-family: var(--font-ui); cursor: pointer;
+  transition: all 0.2s var(--ease-out); box-shadow: var(--shadow-sm); white-space: nowrap;
+}
+.btn-send:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-send:active:not(:disabled) { transform: translateY(0); }
+.btn-send:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-send svg { width: 14px; height: 14px; }
+
+/* ── Toasts ────────────────────────────────────────────────── */
+.toast-container { position: fixed; top: 16px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 10px 16px; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600;
+  font-family: var(--font-ui); box-shadow: var(--shadow-lg); display: flex; align-items: center;
+  gap: 8px; animation: toastSlideIn 0.3s var(--ease-out); cursor: pointer; max-width: 360px;
+}
+.toast.info { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+.toast.success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+.toast.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.toast.warning { background: #fffbeb; border: 1px solid #fed7aa; color: #92400e; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+// ═════════════════════════════════════════════════════════════════
+// Utilities
+// ═════════════════════════════════════════════════════════════════
+
+if (!Array.prototype.findLast) {
+  Array.prototype.findLast = function(fn) {
+    for (let i = this.length - 1; i >= 0; i--) { if (fn(this[i], i, this)) return this[i]; }
+    return undefined;
+  };
+}
+
+function safeStr(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') {
+    const parts = [];
+    if (v.summary) parts.push(v.summary);
+    if (v.insights && Array.isArray(v.insights)) parts.push(v.insights.map(i => '• ' + i).join('\n'));
+    if (parts.length) return parts.join('\n\n');
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+  return String(v);
+}
+
+function formatNumber(n) {
+  if (n == null || isNaN(n)) return String(n != null ? n : '');
+  const num = Number(n);
+  if (Number.isInteger(num)) return num.toLocaleString();
+  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function isNumeric(v) {
+  if (v == null || v === '') return false;
+  return !isNaN(Number(v));
+}
+
+// ── KQL syntax highlighting ───────────────────────────────────
+const KQL_KW = new Set(['where','summarize','project','extend','join','union','let','count','top','take','limit',
+  'order','sort','by','asc','desc','on','between','ago','and','or','not','in','has','contains',
+  'startswith','endswith','matches','regex','render','distinct','mv-expand','parse','evaluate',
+  'make-series','as','with','typeof','datatable','print','range','materialize','lookup','scan',
+  'getschema','facet','fork','partition','search','find','external_data','externaldata','bin']);
+const KQL_FN = new Set(['count','sum','avg','min','max','dcount','percentile','stdev','variance',
+  'countif','sumif','avgif','any','arg_max','arg_min','make_list','make_set','tostring','toint',
+  'tolong','todouble','todatetime','totimespan','strlen','substring','trim','tolower','toupper',
+  'replace','split','strcat','format_datetime','datetime_diff','now','ago','startofday',
+  'startofweek','startofmonth','endofday','endofweek','endofmonth','iff','iif','case',
+  'isempty','isnotempty','isnull','isnotnull','round','floor','ceiling','log','exp','pow',
+  'todynamic','parse_json','bag_keys','array_length','array_sort_asc','array_sort_desc',
+  'extract','extract_all','has_any','has_all','pack','pack_all','indexof','coalesce',
+  'prev','next','row_cumsum','row_number','series_fit_line','series_stats','series_fill_linear']);
+
+function highlightKql(code) {
+  if (!code) return '';
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function mark(cls, text) { return '<span class="kql-' + cls + '">' + esc(text) + '</span>'; }
+  return code
+    .replace(/\/\/.*$/gm, m => mark('cmt', m))
+    .replace(/"[^"]*"/g, m => mark('str', m))
+    .replace(/'[^']*'/g, m => mark('str', m))
+    .replace(/\b(\d+\.?\d*)(d|h|m|s|ms|tick)?\b/g, m => mark('num', m))
+    .replace(/\b[A-Za-z_]\w*(?=\s*\()/g, m =>
+      KQL_FN.has(m.toLowerCase()) ? mark('fn', m) : esc(m))
+    .replace(/\b[A-Za-z_]\w*\b/g, m =>
+      KQL_KW.has(m.toLowerCase()) ? mark('kw', m) : m);
+}
+
+// ── Markdown to HTML ──────────────────────────────────────────
+function mdToHtml(text) {
+  if (!text) return '';
+  // ★ iter13: If content is already HTML (from executive briefing), render as-is
+  if (text.trim().startsWith('<div') || text.trim().startsWith('<h') || text.trim().startsWith('<table')) {
+    return text;
+  }
+  let html = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^[-•] (.+)$/gm, '<li>$1</li>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/<\/ul>\s*<ul>/g, '')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br/>');
+  if (!html.startsWith('<h') && !html.startsWith('<ul')) html = '<p>' + html + '</p>';
+  return html;
+}
+
+
+// ═════════════════════════════════════════════════════════════════
+// Components
+// ═════════════════════════════════════════════════════════════════
+
+function Toast({ toasts, onDismiss }) {
+  if (!toasts.length) return null;
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={'toast ' + t.type} onClick={() => onDismiss(t.id)}>
+          {t.type === 'success' ? '✓' : t.type === 'error' ? '✗' : t.type === 'warning' ? '⚠' : 'ℹ'}
+          <span>{t.message}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ScopeProgression({ currentScope }) {
+  const scopes = [{ days:7, label:'7d' }, { days:30, label:'30d' }, { days:90, label:'90d' }, { days:180, label:'180d' }];
+  const activeIdx = scopes.findIndex(s => s.days >= currentScope);
+  return (
+    <div className="scope-progression">
+      <div className="scope-progression-label">Data Scope</div>
+      <div className="scope-steps">
+        {scopes.map((s, i) => {
+          const done = s.days < currentScope;
+          const active = s.days === currentScope || (i === activeIdx);
+          return (
+            <React.Fragment key={s.days}>
+              {i > 0 && <div className={'scope-line' + (done || active ? ' filled' : '')} />}
+              <div className={'scope-step' + (done ? ' done' : '') + (active ? ' active' : '')}>
+                <div className="scope-step-dot" />
+                <div className="scope-step-label">{s.label}</div>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FreshnessIndicator({ freshness, isStale, onReconnect }) {
+  const [elapsed, setElapsed] = useState(0);
+  const mountTime = useRef(Date.now());
+
+  useEffect(() => {
+    const iv = setInterval(() => setElapsed(Math.floor((Date.now() - mountTime.current) / 1000)), 30000);
+    return () => clearInterval(iv);
+  }, []);
+
+  if (!freshness) return null;
+  const level = isStale ? 'stale' : (freshness.includes('h') ? 'aging' : 'fresh');
+  const label = freshness + (elapsed > 0 ? ' + ' + Math.floor(elapsed / 60) + 'm' : '');
+
+  return (
+    <div className="freshness-bar">
+      <div className={'freshness-dot ' + level} />
+      <span className="freshness-text">
+        {level === 'stale' ? '⚠ Data stale' : 'Data age'}: {label}
+      </span>
+      {isStale && onReconnect && (
+        <button className="btn-reconnect" onClick={onReconnect}>Refresh</button>
+      )}
+    </div>
+  );
+}
+
+function PlotlyChart({ plotlyJson, id }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current || !plotlyJson) return;
+    try {
+      const bl = plotlyJson.layout || {};
+      const traces = plotlyJson.data || [];
+      const isIndicator = traces.some(t => t.type === 'indicator');
+
+      const layout = {
+        ...bl,
+        autosize: true,
+        margin: bl.margin || { l: 50, r: 20, t: 40, b: 50 },
+        paper_bgcolor: bl.paper_bgcolor || '#ffffff',
+        plot_bgcolor: bl.plot_bgcolor || '#ffffff',
+        font: { family: 'DM Sans, system-ui', color: '#475569', size: 12, ...(bl.font || {}) },
+      };
+      // Only add axis config for non-indicator charts
+      if (!isIndicator) {
+        layout.xaxis = { gridcolor: '#f1f5f9', linecolor: '#e2e8f0', ...(bl.xaxis || {}) };
+        layout.yaxis = { gridcolor: '#f1f5f9', linecolor: '#e2e8f0', ...(bl.yaxis || {}) };
+      }
+      Plotly.newPlot(ref.current, traces, layout, { responsive: true, displayModeBar: false });
+    } catch (e) { console.error('Plotly error:', e); }
+    return () => { if (ref.current) try { Plotly.purge(ref.current); } catch {} };
+  }, [plotlyJson]);
+  const minH = (plotlyJson?.data || []).some(t => t.type === 'indicator') ? 180 : 280;
+  return <div className="chart-wrapper"><div ref={ref} style={{ width: '100%', minHeight: minH }} /></div>;
+}
+
+function DataTable({ columns, rows, totalRows }) {
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(0);
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  const sortedRows = useMemo(() => {
+    if (!sortCol) return rows;
+    return [...rows].sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (isNumeric(va) && isNumeric(vb)) { va = Number(va); vb = Number(vb); }
+      else { va = String(va != null ? va : '').toLowerCase(); vb = String(vb != null ? vb : '').toLowerCase(); }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [rows, sortCol, sortDir]);
+
+  const pageRows = sortedRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+    setPage(0);
+  };
+
+  return (
+    <div className="data-table-container">
+      <div className="data-table-scroll">
+        <table className="data-table">
+          <thead>
+            <tr>
+              {columns.map(col => (
+                <th key={col} className={sortCol === col ? 'sorted' : ''} onClick={() => handleSort(col)}>
+                  {col}
+                  <span className="sort-icon">{sortCol === col ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.map((row, ri) => (
+              <tr key={ri}>
+                {columns.map(col => (
+                  <td key={col} className={isNumeric(row[col]) ? 'num' : ''}>
+                    {isNumeric(row[col]) ? formatNumber(row[col]) : String(row[col] != null ? row[col] : '')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {(totalPages > 1 || (totalRows && totalRows > rows.length)) && (
+        <div className="table-footer">
+          <span>
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, rows.length)} of {rows.length} rows
+            {totalRows > rows.length ? ' (' + totalRows.toLocaleString() + ' total)' : ''}
+          </span>
+          <div className="page-controls">
+            <button className="page-btn" disabled={page === 0} onClick={() => setPage(0)}>⟨⟨</button>
+            <button className="page-btn" disabled={page === 0} onClick={() => setPage(p => p - 1)}>⟨</button>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{page + 1} / {totalPages}</span>
+            <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>⟩</button>
+            <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>⟩⟩</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KqlBlock({ code }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const doCopy = () => {
+    navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+
+  return (
+    <div>
+      <button className={'kql-toggle' + (open ? ' open' : '')} onClick={() => setOpen(!open)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        {open ? 'Hide KQL' : 'View KQL'}
+      </button>
+      {open && (
+        <div className="kql-block">
+          <div className="kql-header">
+            <span>Kusto Query</span>
+            <button className={'btn-copy' + (copied ? ' copied' : '')} onClick={doCopy}>
+              {copied ? '✓ Copied' : '⎘ Copy'}
+            </button>
+          </div>
+          <div className="kql-code" dangerouslySetInnerHTML={{ __html: highlightKql(code) }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BotMessage({ msg }) {
+  const chartIdBase = useRef('chart-' + msg.id + '-' + Date.now());
+  const hasVisuals = (msg.charts && msg.charts.length > 0) || msg.dataTable;
+  return (
+    <div className="msg-row bot">
+      <div className="msg-bubble">
+        <div className={'bot-bubble' + (msg.isError ? ' error' : '')}>
+          {msg.streaming && !msg.content && !hasVisuals ? (
+            <div className="typing-dots"><span/><span/><span/></div>
+          ) : msg.content ? (
+            <div dangerouslySetInnerHTML={{ __html: mdToHtml(msg.content) }} />
+          ) : null}
+          {msg.streaming && msg.content && <span className="streaming-cursor" />}
+
+          {(msg.charts || []).map((chart, ci) => (
+            <PlotlyChart key={ci} plotlyJson={chart} id={chartIdBase.current + '-' + ci} />
+          ))}
+
+          {msg.dataTable && (
+            <DataTable columns={msg.dataTable.columns} rows={msg.dataTable.rows} totalRows={msg.dataTable.totalRows} />
+          )}
+
+          {msg.kql && <KqlBlock code={msg.kql} />}
+
+          {msg.meta && msg.meta.length > 0 && (
+            <div className="msg-meta">
+              {msg.meta.map((m, i) => {
+                let cls = 'meta-tag';
+                if (m.includes('profile') || m.includes('kusto') || m.includes('cache') || m.includes('streaming') || m.includes('planner'))
+                  cls += ' source';
+                if (m.includes('stale')) cls += ' stale';
+                return <span key={i} className={cls}>{m}</span>;
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserMessage({ text }) {
+  return (
+    <div className="msg-row user">
+      <div className="msg-bubble">
+        <div className="user-bubble">{text}</div>
+      </div>
+    </div>
+  );
+}
+
+function Scorecard({ connInfo, opening, collapsed, onToggle, scorecardData }) {
+  if (!connInfo) return null;
+  const sd = scorecardData;
+
+  // Region heatmap color: higher pct = darker blue
+  const regionColor = (pct) => {
+    if (pct >= 40) return '#1e40af';
+    if (pct >= 25) return '#2563eb';
+    if (pct >= 15) return '#3b82f6';
+    if (pct >= 5) return '#60a5fa';
+    return '#93c5fd';
+  };
+
+  // WoW badge
+  const wowBadge = () => {
+    if (!sd) return null;
+    const pct = sd.wow_pct || 0;
+    const cls = pct > 0 ? 'badge-positive' : pct < -10 ? 'badge-negative' : 'badge-neutral';
+    const arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '—';
+    return <span className={'rich-card-badge ' + cls}>{arrow} {sd.wow_change}</span>;
+  };
+
+  // Sparkline using pure SVG — no external deps
+  const MiniSparkline = ({ data, color }) => {
+    if (!data || data.length < 3) return null;
+    const vals = data.map(v => Number(v) || 0);
+    const mn = Math.min(...vals);
+    const mx = Math.max(...vals);
+    const range = mx - mn || 1;
+    const w = 120, h = 32, pad = 2;
+    const points = vals.map((v, i) => {
+      const x = pad + (i / (vals.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((v - mn) / range) * (h - pad * 2);
+      return x + ',' + y;
+    }).join(' ');
+    // Area fill path
+    const firstX = pad, lastX = pad + ((vals.length - 1) / (vals.length - 1)) * (w - pad * 2);
+    const areaPath = 'M' + pad + ',' + h + ' L' + points.split(' ').map(p => p).join(' L') + ' L' + lastX + ',' + h + ' Z';
+    return (
+      <div className="sparkline-wrap">
+        <svg width="100%" height={h} viewBox={'0 0 ' + w + ' ' + h} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id={'sg-' + color.replace('#','')} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill={'url(#sg-' + color.replace('#','') + ')'} />
+          <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <div className={'scorecard' + (collapsed ? ' collapsed' : '')}>
+      <div className="scorecard-header">
+        <h2>📊 {connInfo.config_name || 'Connected'}</h2>
+        <span className="tag">{sd ? 'Dashboard' : 'Live'}</span>
+        <button className="scorecard-toggle" onClick={onToggle}>
+          {collapsed ? 'Show Dashboard' : 'Hide'}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+      </div>
+
+      {sd ? (
+        <React.Fragment>
+          {/* ── Rich 6-Card Grid ── */}
+          <div className="rich-grid">
+            {/* Card 1: Total Events + WoW */}
+            <div className="rich-card" style={{ animationDelay: '0s' }}>
+              <div className="rich-card-header">
+                <span className="rich-card-label">Total Events</span>
+                {wowBadge()}
+              </div>
+              <div className="rich-card-value">{sd.total_events}</div>
+              <div className="rich-card-sub">
+                This week: {formatNumber(sd.this_week)} vs last: {formatNumber(sd.last_week)}
+              </div>
+              <MiniSparkline data={sd.daily_sparkline} color="#2563eb" />
+            </div>
+
+            {/* Card 2: Active Orgs */}
+            <div className="rich-card" style={{ animationDelay: '0.05s' }}>
+              <div className="rich-card-header">
+                <span className="rich-card-label">Active Orgs</span>
+                <span className={'rich-card-badge badge-neutral'}>{sd.trend_direction}</span>
+              </div>
+              <div className="rich-card-value">{sd.active_orgs}</div>
+              <div className="rich-card-sub">Avg {sd.avg_daily}/day · Peak {sd.peak_date}</div>
+              <MiniSparkline data={sd.org_sparkline && sd.org_sparkline.length > 2 ? sd.org_sparkline : sd.daily_sparkline} color="#8b5cf6" />
+            </div>
+
+            {/* Card 3: Top Mover */}
+            <div className="rich-card" style={{ animationDelay: '0.1s' }}>
+              <div className="rich-card-header">
+                <span className="rich-card-label">Top Contributor</span>
+              </div>
+              {sd.top_mover ? (
+                <React.Fragment>
+                  <div className="rich-card-value" style={{ fontSize: 18 }}>{sd.top_mover.name}</div>
+                  <div className="rich-card-sub">{sd.top_mover.value} events · {sd.top_mover.pct}% of total</div>
+                  <div className="health-bar" style={{ marginTop: 10 }}>
+                    <div style={{ height: '100%', borderRadius: 4, background: 'linear-gradient(90deg, #2563eb, #6366f1)', width: Math.min(sd.top_mover.pct, 100) + '%' }} />
+                  </div>
+                </React.Fragment>
+              ) : (
+                <div className="rich-card-sub">No org data available</div>
+              )}
+            </div>
+
+            {/* Card 4: Anomaly Alert */}
+            <div className="rich-card" style={{ animationDelay: '0.15s', borderColor: sd.anomaly_count > 0 ? '#fecaca' : undefined }}>
+              <div className="rich-card-header">
+                <span className="rich-card-label">Anomaly Alerts</span>
+                {sd.anomaly_count > 0 ? (
+                  <span className="rich-card-badge badge-negative">{sd.anomaly_count} found</span>
+                ) : (
+                  <span className="rich-card-badge badge-positive">✓ Clear</span>
+                )}
+              </div>
+              {sd.anomaly_count > 0 ? (
+                <div className="anomaly-list">
+                  {sd.anomalies.slice(0, 3).map((a, i) => (
+                    <div key={i} className="anomaly-item">
+                      <div className={'anomaly-dot ' + a.severity} />
+                      <span>{a.signal}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  <div className="rich-card-value" style={{ fontSize: 20, color: 'var(--success)' }}>All Clear</div>
+                  <div className="rich-card-sub">No anomalies detected in recent data</div>
+                </div>
+              )}
+            </div>
+
+            {/* Card 5: Regional Heatmap */}
+            {sd.all_regions && sd.all_regions.length > 0 && (
+              <div className="rich-card" style={{ animationDelay: '0.2s', gridColumn: sd.all_regions.length > 4 ? 'span 2' : undefined }}>
+                <div className="rich-card-header">
+                  <span className="rich-card-label">Regions</span>
+                  <span className="rich-card-badge badge-neutral">{sd.region_count} active</span>
+                </div>
+                <div className="region-grid">
+                  {sd.all_regions.filter(r => r.pct >= 0.5).slice(0, 8).map((r, i) => (
+                    <div key={i} className="region-cell" style={{ background: regionColor(r.pct) }}>
+                      <span className="region-name">{r.name}</span>
+                      <span className="region-pct">{r.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Card 6: Ingestion Health */}
+            <div className="rich-card" style={{ animationDelay: '0.25s' }}>
+              <div className="rich-card-header">
+                <span className="rich-card-label">Ingestion Health</span>
+                <span className={'rich-card-badge ' + (sd.ingestion_health === 'green' ? 'badge-positive' : sd.ingestion_health === 'yellow' ? 'badge-warning' : 'badge-negative')}>
+                  {sd.ingestion_health === 'green' ? '✓ Healthy' : sd.ingestion_label}
+                </span>
+              </div>
+              <div className="rich-card-sub" style={{ marginTop: 4 }}>{sd.ingestion_label}</div>
+              <div className="health-bar">
+                <div className={'health-fill ' + sd.ingestion_health} />
+              </div>
+              <div className="rich-card-sub" style={{ marginTop: 8 }}>
+                {connInfo.tables} tables · {connInfo.clusters} clusters · {sd.tables_consulted && sd.tables_consulted.length} analyzed
+              </div>
+            </div>
+          </div>
+
+          {/* Analyst Opening */}
+          {opening && (
+            <div className="scorecard-opening" dangerouslySetInnerHTML={{ __html: mdToHtml(opening) }} />
+          )}
+        </React.Fragment>
+      ) : (
+        <React.Fragment>
+          {/* ── Basic 4-Card Grid (before scorecard data arrives) ── */}
+          <div className="kpi-grid">
+            <div className="kpi-card" style={{ animationDelay: '0s' }}>
+              <div className="kpi-label">Tables</div>
+              <div className="kpi-value">{connInfo.tables || 0}</div>
+              <div className="kpi-sub">{connInfo.columns || '—'} columns</div>
+            </div>
+            <div className="kpi-card" style={{ animationDelay: '0.05s' }}>
+              <div className="kpi-label">Cached Rows</div>
+              <div className="kpi-value">{(connInfo.rows || 0).toLocaleString()}</div>
+              <div className="kpi-sub">{connInfo.data_source || 'live'} source</div>
+            </div>
+            <div className="kpi-card" style={{ animationDelay: '0.1s' }}>
+              <div className="kpi-label">Clusters</div>
+              <div className="kpi-value">{connInfo.clusters || 0}</div>
+              <div className="kpi-sub">{connInfo.elapsed_seconds ? connInfo.elapsed_seconds + 's connect' : ''}</div>
+            </div>
+            <div className="kpi-card" style={{ animationDelay: '0.15s' }}>
+              <div className="kpi-label">Scope</div>
+              <div className="kpi-value">{connInfo.scope_days || 7}d</div>
+              <div className="kpi-sub">{connInfo.metrics || 0} metrics · {connInfo.dimensions || 0} dims</div>
+            </div>
+          </div>
+          {opening && (
+            <div className="scorecard-opening" dangerouslySetInnerHTML={{ __html: mdToHtml(opening) }} />
+          )}
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+
+// ═════════════════════════════════════════════════════════════════
+// App
+// ═════════════════════════════════════════════════════════════════
+
+function App() {
+  const [configs, setConfigs] = useState([]);
+  const [selectedConfig, setSelectedConfig] = useState('');
+  const [authMethod, setAuthMethod] = useState('azure_cli');
+  const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [status, setStatus] = useState({ state: 'idle', text: 'Not connected' });
+  const [progress, setProgress] = useState(0);
+  const [details, setDetails] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [chips, setChips] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [scopeInfo, setScopeInfo] = useState(null);
+  const [currentScope, setCurrentScope] = useState(0);
+  const [connInfo, setConnInfo] = useState(null);
+  const [analystOpening, setAnalystOpening] = useState('');
+  const [freshness, setFreshness] = useState(null);
+  const [isStale, setIsStale] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [scorecardOpen, setScorecardOpen] = useState(true);
+  const [scorecardData, setScorecardData] = useState(null);
+
+  const wsRef = useRef(null);
+  const chatRef = useRef(null);
+  const inputRef = useRef(null);
+  const msgIdRef = useRef(0);
+  const streamMsgIdRef = useRef(null);
+  const streamTimeoutRef = useRef(null);
+
+  const nextId = () => ++msgIdRef.current;
+  const addDetail = useCallback((text) => {
+    setDetails(d => [...d, new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' ' + text]);
+  }, []);
+  const addToast = useCallback((message, type) => {
+    type = type || 'info';
+    const id = Date.now();
+    setToasts(t => [...t, { id, message, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
+  }, []);
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      if (chatRef.current) chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });
+    }, 60);
+  }, []);
+
+  // ── Fetch configs ───────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/configs')
+      .then(r => r.json())
+      .then(data => {
+        if (data.configs) {
+          setConfigs(data.configs);
+          if (data.configs.length > 0) setSelectedConfig(data.configs[0].name);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // ── Message handler ref ─────────────────────────────────────
+  const handleMessageRef = useRef(null);
+  const handleMessage = useCallback((data) => {
+    try { if (handleMessageRef.current) handleMessageRef.current(data); }
+    catch (e) { console.error('PULSE handleMessage error:', e, data); }
+  }, []);
+
+  // ── WebSocket ───────────────────────────────────────────────
+  const reconnectTimer = useRef(null);
+  const connectWS = useCallback(() => {
+    try {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(proto + '//' + location.host + '/ws/chat');
+      ws.onopen = () => {
+        setStatus({ state: 'idle', text: 'Ready to connect' });
+        if (reconnectTimer.current) { clearTimeout(reconnectTimer.current); reconnectTimer.current = null; }
+      };
+      ws.onclose = () => {
+        setConnected(false); setConnecting(false);
+        setStatus({ state: 'idle', text: 'Reconnecting…' });
+        reconnectTimer.current = setTimeout(() => connectWS(), 2000);
+      };
+      ws.onerror = (e) => console.error('WS error:', e);
+      ws.onmessage = (e) => {
+        try { handleMessage(JSON.parse(e.data)); } catch (err) { console.error('WS parse:', err); }
+      };
+      wsRef.current = ws;
+    } catch (e) {
+      console.error('WS connect error:', e);
+      reconnectTimer.current = setTimeout(() => connectWS(), 3000);
+    }
+  }, [handleMessage]);
+
+  useEffect(() => {
+    connectWS();
+    return () => {
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [connectWS]);
+
+  // ── Handle incoming messages ────────────────────────────────
+  // ★ iter15: Helper to clear staged stream timeouts
+  const clearStreamTimers = () => {
+    const t = streamTimeoutRef.current;
+    if (!t) return;
+    if (typeof t === 'object' && t.t1) { clearTimeout(t.t1); clearTimeout(t.t2); clearTimeout(t.t3); }
+    else { clearTimeout(t); }
+    streamTimeoutRef.current = null;
+  };
+
+  handleMessageRef.current = (data) => {
+    const t = data.type;
+    if (t === 'welcome') return;
+
+    if (t === 'status') {
+      setStatus({ state: 'connecting', text: data.message });
+      if (data.progress != null) setProgress(data.progress);
+      addDetail(data.message + (data.detail ? ' · ' + data.detail : ''));
+      return;
+    }
+
+    if (t === 'connected') {
+      setStatus({ state: 'connected', text: '✓ ' + data.tables + ' tables · ' + (data.rows || 0).toLocaleString() + ' rows' });
+      setProgress(1); setConnected(true); setConnecting(false);
+      setScopeInfo({ tables: data.tables, rows: data.rows, source: data.data_source, fastPath: data.fast_path });
+      setCurrentScope(data.scope_days || 7);
+      setConnInfo(data);
+      setAnalystOpening(safeStr(data.analyst_opening));
+      if (data.fast_path) addToast('Fast path: loaded from cache', 'success');
+      return;
+    }
+
+    if (t === 'processing' || t === 'stream_start') {
+      const id = nextId();
+      streamMsgIdRef.current = id;
+      setMessages(m => [...m, { id, type: 'bot', content: '', streaming: true, charts: [], meta: [], _rawText: '' }]);
+      scrollToBottom();
+      // ★ iter15: Staged timeout — 15s hint, 60s update, 120s give up
+      clearStreamTimers();
+      const t1 = setTimeout(() => {
+        if (streamMsgIdRef.current === id) {
+          setMessages(m => m.map(msg => msg.id === id && msg.streaming && !msg.content
+            ? { ...msg, content: '🔍 Querying live data — complex queries may take 15-60 seconds...' }
+            : msg
+          ));
+        }
+      }, 15000);
+      const t2 = setTimeout(() => {
+        if (streamMsgIdRef.current === id) {
+          setMessages(m => m.map(msg => msg.id === id && msg.streaming
+            ? { ...msg, content: '⏳ Still running — hang tight, almost there...' }
+            : msg
+          ));
+        }
+      }, 60000);
+      const t3 = setTimeout(() => {
+        if (streamMsgIdRef.current === id) {
+          setMessages(m => m.map(msg => msg.id === id
+            ? { ...msg, content: '⏱️ This query took too long. Try "top 10 orgs" or "show the trend" for instant answers from cached data.', streaming: false, meta: ['timeout'] }
+            : msg
+          ));
+          streamMsgIdRef.current = null;
+        }
+      }, 120000);
+      streamTimeoutRef.current = { t1, t2, t3 };
+      return;
+    }
+
+    if (t === 'stream_token') {
+      setMessages(m => m.map(msg => {
+        if (msg.id === streamMsgIdRef.current) {
+          const newText = (msg._rawText || '') + safeStr(data.text);
+          return { ...msg, content: newText, _rawText: newText };
+        }
+        return msg;
+      }));
+      scrollToBottom();
+      return;
+    }
+
+    if (t === 'stream_end') {
+      clearStreamTimers();
+      setMessages(m => m.map(msg => {
+        if (msg.id === streamMsgIdRef.current) {
+          const meta = [];
+          if (data.elapsed_seconds) meta.push('⏱ ' + data.elapsed_seconds + 's');
+          if (data.source) meta.push(data.source);
+          if (data.scope_label) meta.push(data.scope_label);
+          if (data.data_scope) meta.push(data.data_scope);
+          return { ...msg, content: safeStr(data.full_text) || msg._rawText, streaming: false, meta };
+        }
+        return msg;
+      }));
+      streamMsgIdRef.current = null;
+      scrollToBottom();
+      return;
+    }
+
+    if (t === 'answer') {
+      clearStreamTimers();
+      const meta = [];
+      if (data.elapsed_seconds) meta.push('⏱ ' + data.elapsed_seconds + 's');
+      if (data.source) meta.push(data.source);
+      if (data.scope_label) meta.push(data.scope_label);
+      if (data.data_scope) meta.push(data.data_scope);
+      if (data.data_freshness) meta.push('🕐 ' + data.data_freshness);
+      if (data.is_stale) meta.push('⚠ stale');
+
+      if (data.data_freshness) setFreshness(data.data_freshness);
+      if (data.is_stale != null) setIsStale(data.is_stale);
+
+      if (streamMsgIdRef.current) {
+        setMessages(m => m.map(msg => {
+          if (msg.id === streamMsgIdRef.current) {
+            return { ...msg, content: safeStr(data.content) || msg._rawText || '', streaming: false, meta };
+          }
+          return msg;
+        }));
+        streamMsgIdRef.current = null;
+      } else if (data.content) {
+        const id = nextId();
+        setMessages(m => [...m, { id, type: 'bot', content: safeStr(data.content), charts: [], meta }]);
+      }
+      scrollToBottom();
+      return;
+    }
+
+    if (t === 'chart') {
+      clearStreamTimers();
+      setMessages(m => { const u = [...m]; const last = u.findLast(x => x.type === 'bot'); if (last) last.charts = [...(last.charts || []), data.plotly_json]; return u; });
+      scrollToBottom();
+      return;
+    }
+
+    if (t === 'data_table') {
+      setMessages(m => { const u = [...m]; const last = u.findLast(x => x.type === 'bot'); if (last) last.dataTable = { columns: data.columns, rows: data.rows, totalRows: data.total_rows }; return u; });
+      scrollToBottom();
+      return;
+    }
+
+    if (t === 'kql') {
+      setMessages(m => { const u = [...m]; const last = u.findLast(x => x.type === 'bot'); if (last) last.kql = data.code; return u; });
+      return;
+    }
+
+    if (t === 'suggestions') {
+      setChips((data.items || []).map(item => ({ label: item.label || item.value, value: item.value })));
+      return;
+    }
+
+    if (t === 'error') {
+      clearStreamTimers();
+      const id = nextId();
+      setMessages(m => [...m, { id, type: 'bot', content: safeStr(data.message), isError: true, charts: [], meta: [], kql: data.kql || null }]);
+      streamMsgIdRef.current = null;
+      scrollToBottom();
+      return;
+    }
+
+    // ── Scorecard (compound analyst dashboard data)
+    if (t === 'scorecard') {
+      setScorecardData(data);
+      setScorecardOpen(true);
+      addToast('Dashboard data ready', 'success');
+      return;
+    }
+
+    if (t === 'data_upgraded') {
+      addToast(data.message || 'Data upgraded to ' + data.scope, 'success');
+      if (data.tables) {
+        setScopeInfo(s => ({ ...s, tables: data.tables, rows: data.rows }));
+        // ★ iter13: Sync the green status badge with new counts
+        setStatus({ state: 'connected', text: '✓ ' + data.tables + ' tables · ' + (data.rows || 0).toLocaleString() + ' rows' });
+      }
+      if (data.scope_days) setCurrentScope(data.scope_days);
+      if (data.data_freshness) setFreshness(data.data_freshness);
+      addDetail(data.message);
+      return;
+    }
+
+    if (t === 'build_complete') { addDetail('Build done: ' + data.tables + ' tables'); return; }
+
+    if (t === 'overview') {
+      const id = nextId();
+      setMessages(m => [...m, { id, type: 'bot', content: safeStr(data.html || data.content || ''), charts: [], meta: [] }]);
+      scrollToBottom();
+      return;
+    }
+  };
+
+  // ── Actions ─────────────────────────────────────────────────
+  const doConnect = () => {
+    if (!wsRef.current || !selectedConfig) return;
+    setConnecting(true); setDetails([]); setMessages([]); setChips([]);
+    setProgress(0); setCurrentScope(0); setConnInfo(null); setAnalystOpening('');
+    setFreshness(null); setIsStale(false); setScorecardOpen(true); setScorecardData(null);
+    setStatus({ state: 'connecting', text: 'Connecting…' });
+    wsRef.current.send(JSON.stringify({ type: 'connect', config_name: selectedConfig, auth_method: authMethod }));
+  };
+
+  const doDisconnect = () => {
+    if (wsRef.current) { wsRef.current.send(JSON.stringify({ type: 'disconnect' })); wsRef.current.close(); }
+    setConnected(false); setConnecting(false); setCurrentScope(0);
+    setConnInfo(null); setAnalystOpening(''); setFreshness(null); setIsStale(false);
+    setStatus({ state: 'idle', text: 'Disconnected' });
+  };
+
+  const doReconnect = () => {
+    doDisconnect();
+    setTimeout(() => { connectWS(); setTimeout(doConnect, 500); }, 300);
+  };
+
+  const doQuestion = (text) => {
+    const q = text || input.trim();
+    if (!q || !wsRef.current) return;
+    const id = nextId();
+    setMessages(m => [...m, { id, type: 'user', content: q }]);
+    setChips([]);
+    if (scorecardOpen) setScorecardOpen(false);
+    wsRef.current.send(JSON.stringify({ type: 'question', text: q }));
+    setInput('');
+    scrollToBottom();
+    setTimeout(() => inputRef.current && inputRef.current.focus(), 100);
+  };
+
+  const doChip = (chip) => {
+    const id = nextId();
+    setMessages(m => [...m, { id, type: 'user', content: chip.label }]);
+    setChips([]);
+    if (scorecardOpen) setScorecardOpen(false);
+    wsRef.current.send(JSON.stringify({ type: 'chip', chip_id: chip.value }));
+    scrollToBottom();
+  };
+
+  const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doQuestion(); } };
+
+  // ── Render ──────────────────────────────────────────────────
+  return (
+    <div className="layout">
+      <Toast toasts={toasts} onDismiss={(id) => setToasts(t => t.filter(x => x.id !== id))} />
+
+      <button className="sidebar-toggle" onClick={() => setSidebarOpen(o => !o)}>
+        {sidebarOpen ? '✕' : '☰'}
+      </button>
+
+      {sidebarOpen && typeof window !== 'undefined' && window.innerWidth <= 860 && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* SIDEBAR */}
+      <div className={'sidebar' + (sidebarOpen ? '' : ' collapsed')}>
+        <div className="sidebar-header">
+          <div className="logo-icon">⚡</div>
+          <div>
+            <div className="sidebar-title">PULSE</div>
+            <div className="sidebar-version">v4.0 iter16</div>
+          </div>
+        </div>
+        <div className="sidebar-body">
+          <div className="field-group">
+            <span className="field-label">Data Source</span>
+            <select className="field-select" value={selectedConfig} onChange={e => setSelectedConfig(e.target.value)} disabled={connecting || connected}>
+              {configs.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="field-group">
+            <span className="field-label">Authentication</span>
+            <select className="field-select" value={authMethod} onChange={e => setAuthMethod(e.target.value)} disabled={connecting || connected}>
+              <option value="azure_cli">Azure CLI</option>
+              <option value="managed_identity">Managed Identity</option>
+            </select>
+          </div>
+
+          {!connected ? (
+            <button className="btn-connect" onClick={doConnect} disabled={connecting || !selectedConfig}>
+              {connecting ? 'Connecting…' : 'Connect'}
+            </button>
+          ) : (
+            <button className="btn-disconnect" onClick={doDisconnect}>Disconnect</button>
+          )}
+
+          <div className={'status-badge status-' + status.state}>{status.text}</div>
+
+          {connecting && progress < 1 && (
+            <div className="progress-track"><div className="progress-fill" style={{ width: (progress * 100) + '%' }} /></div>
+          )}
+
+          {scopeInfo && connected && (
+            <div className="scope-badges">
+              <span className="scope-badge">📊 {scopeInfo.tables} tables</span>
+              <span className="scope-badge">📝 {(scopeInfo.rows || 0).toLocaleString()} rows</span>
+              {scopeInfo.source && <span className="scope-badge">💾 {scopeInfo.source}</span>}
+              {scopeInfo.fastPath && <span className="scope-badge fast">⚡ fast path</span>}
+            </div>
+          )}
+
+          {connected && currentScope > 0 && <ScopeProgression currentScope={currentScope} />}
+
+          {connected && <FreshnessIndicator freshness={freshness} isStale={isStale} onReconnect={doReconnect} />}
+
+          {details.length > 0 && (
+            <div className="connection-log">
+              {details.map((d, i) => <div key={i}>{d}</div>)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* MAIN */}
+      <div className="main">
+        {!connected && messages.length === 0 ? (
+          <div className="welcome-screen">
+            <div className="welcome-inner">
+              <div className="welcome-logo">⚡</div>
+              <h1>PULSE</h1>
+              <p>Telemetry Intelligence Engine.<br/>Connect to a data source and start asking questions in natural language.</p>
+            </div>
+          </div>
+        ) : (
+          <React.Fragment>
+            {connected && connInfo && (
+              <Scorecard connInfo={connInfo} opening={analystOpening} collapsed={!scorecardOpen} onToggle={() => setScorecardOpen(o => !o)} scorecardData={scorecardData} />
+            )}
+            {messages.length > 0 && (
+              <div className="chat-area" ref={chatRef}>
+                {messages.map(msg => (
+                  msg.type === 'user'
+                    ? <UserMessage key={msg.id} text={msg.content} />
+                    : <BotMessage key={msg.id} msg={msg} />
+                ))}
+              </div>
+            )}
+          </React.Fragment>
+        )}
+
+        {chips.length > 0 && (
+          <div className="chips-bar">
+            {chips.map((ch, i) => (
+              <button key={i} className="chip" onClick={() => doChip(ch)}>{ch.label}</button>
+            ))}
+          </div>
+        )}
+
+        <div className="input-bar">
+          <input
+            ref={inputRef}
+            className="input-field"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={connected ? 'Ask a question about your data…' : 'Connect to a data source first'}
+            disabled={!connected}
+          />
+          <button className="btn-send" onClick={() => doQuestion()} disabled={!connected || !input.trim()}>
+            Ask
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('PULSE UI Error:', error, info); }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, textAlign: 'center', fontFamily: 'DM Sans, sans-serif' }}>
+          <h2 style={{ color: '#dc2626', marginBottom: 12 }}>Something went wrong</h2>
+          <p style={{ color: '#64748b', marginBottom: 20 }}>{this.state.error.message}</p>
+          <button onClick={() => { this.setState({ error: null }); window.location.reload(); }}
+            style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#2563eb', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ErrorBoundary><App /></ErrorBoundary>);
+</script>
+</body>
+</html>
